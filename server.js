@@ -1,78 +1,89 @@
 const express = require('express'); 
+const mongoose = require('mongoose');
 const books = require('./books');
-const auth = require('./auth');
+const bookModel = require('./book_model');
+const { authUser, authenticateJWT } = require('./auth');
 
 
 const app = express();
+const database_uri = "mongodb+srv://njeunkweborel:pL3tOMBW83oJNDM4@cluster0.wy6yuha.mongodb.net/?retryWrites=true&w=majority";
 const host = "localhost";
-const fs = require('fs');
 
 
 app.use(express.json());
-
 
 app.get('/', (req, res) => {
     res.json({message : 'API IS WORKING ...'});
 });
 
-app.get('/api/books', auth.authenticateJWT, (req, res) => {
-    res.json(books);
+app.get('/api/books', authenticateJWT, (req, res) => {
+    bookModel.find()
+    .then((books) => {
+        res.json(books);
+    });
 });
 
-app.post('/api/book/add', auth.authenticateJWT, (req, res) => {
-    const bookToSave = {
-        id: (books.length) + 1,
-        title: req.body.title,
-        author: req.body.author,
-        publishedDate: req.body.publishedDate
-    }; 
-
-    books.push(bookToSave);
-
-    res.json(books);
-});
-
-app.put('/api/book/edit/:id', auth.authenticateJWT, (req, res) => {
-    let id = req.params.id;
-
+app.post('/api/book/add', authenticateJWT, (req, res) => {
     let title = req.body.title;
     let author = req.body.author;
     let publishedDate = req.body.publishedDate;
 
-    let index = books.findIndex((book) => {
-        return book.id == Number.parseInt(id);
-    });
+    let bookToSave = new bookModel({
+        title: title,
+        author: author,
+        publishedDate: publishedDate
+    }); 
 
-    let bookToUpdate = books[index];
-
-    bookToUpdate.title = title;
-    bookToUpdate.author = author;
-    bookToUpdate.publishedDate = publishedDate;
-
-    res.json(bookToUpdate);
+    bookToSave
+    .save()
+    .then(bookSaved => {
+        res.status(201).json({
+            message: 'book successfully store to database !',
+            book: bookSaved
+        });
+    })
+    .catch(err => console.log('err', err));
 });
 
 
-app.delete('/api/book/delete/:id', auth.authenticateJWT, (req, res) => {
+app.put('/api/book/edit/:id', authenticateJWT, (req, res) => {
     let id = req.params.id;
 
-    let index = books.findIndex((book) => {
-        return book.id == Number.parseInt(id);
-    });
+    bookModel.findByIdAndUpdate(id, req.body, { useFindAndModify: false, new: true })
+    .then((data) => 
+        console.log(data)
+    ).catch(err => console.log(err));
 
-    let bookToDelete = books[index];
+    res.status(200).json("the book have been successfully update");
 
-    books.splice(index, 1);
-
-    res.json(books);
 });
 
 
+app.delete('/api/book/delete/:id', authenticateJWT, (req, res) => {
+    let id = req.params.id;
 
-app.post('/api/auth', auth.authUser);
+    bookModel.findByIdAndDelete(id)
+    .then((data) => 
+        console.log(data)
+    ).catch(err => console.log(err));
+
+    res.status(200).json("the book have been delete");
+});
 
 
-const server = app.listen(5000, function(){
-    var port = server.address().port
-    console.log("REST API demo app listening at http://%s:%s", host, port)
-})
+app.post('/api/auth', authUser);
+
+
+mongoose.connect(database_uri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log(`app is succefuly connected to codevigor Database...`);
+
+    const server = app.listen(5000, function(){
+        var port = server.address().port
+        console.log("REST API demo app listening at http://%s:%s", host, port)
+    });
+
+  })
+  .catch((e) => {
+    console.log(`error when trying to connect with database : ${e}`);
+});

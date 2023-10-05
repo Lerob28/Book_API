@@ -17,7 +17,7 @@ const authUser = (req, res) => {
         },
         process.env.JWT_SECRET_KEY,
         {
-            expiresIn: "1min",
+            expiresIn: "2min",
         }
     );
 

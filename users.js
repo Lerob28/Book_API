@@ -10,6 +10,6 @@ const users = [
       "username": "jane@gmail.com",
       "password": "jane"
     }
-  ];
+];
   
-  module.exports = users;
+module.exports = users;
