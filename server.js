@@ -1,5 +1,6 @@
 const express = require('express'); 
 const books = require('./books');
+const auth = require('./auth');
 
 
 const app = express();
@@ -14,11 +15,11 @@ app.get('/', (req, res) => {
     res.json({message : 'API IS WORKING ...'});
 });
 
-app.get('/api/books', (req, res) => {
+app.get('/api/books', auth.authenticateJWT, (req, res) => {
     res.json(books);
 });
 
-app.post('/api/book/add', (req, res) => {
+app.post('/api/book/add', auth.authenticateJWT, (req, res) => {
     const bookToSave = {
         id: (books.length) + 1,
         title: req.body.title,
@@ -31,7 +32,7 @@ app.post('/api/book/add', (req, res) => {
     res.json(books);
 });
 
-app.put('/api/book/edit/:id', (req, res) => {
+app.put('/api/book/edit/:id', auth.authenticateJWT, (req, res) => {
     let id = req.params.id;
 
     let title = req.body.title;
@@ -52,7 +53,7 @@ app.put('/api/book/edit/:id', (req, res) => {
 });
 
 
-app.delete('/api/book/delete/:id', (req, res) => {
+app.delete('/api/book/delete/:id', auth.authenticateJWT, (req, res) => {
     let id = req.params.id;
 
     let index = books.findIndex((book) => {
@@ -68,6 +69,7 @@ app.delete('/api/book/delete/:id', (req, res) => {
 
 
 
+app.post('/api/auth', auth.authUser);
 
 
 const server = app.listen(5000, function(){
